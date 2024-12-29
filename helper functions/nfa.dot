@@ -1,0 +1,13 @@
+digraph { 
+  0[label="Q2"];
+  1[label="Q1"];
+  2[label="Q3"];
+  3[label="Q0"];
+  start[shape=none];
+  start -> 3;
+  2 [ shape=doublecircle ];
+  3 -> 3 [fontsize=12,label="'A"];
+  3 -> 1 [fontsize=12,label="'A"];
+  1 -> 0 [fontsize=12,label="'B"];
+  0 -> 2 [fontsize=12,label="&epsilon;"];
+}

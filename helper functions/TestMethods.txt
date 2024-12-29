@@ -1,0 +1,175 @@
+			Test NFA-DFA
+Method:
+
+1. Create Simple NFAs, include NFAs with epsilon transitions, multiple transitions for the same input, and different accept states.
+2. Apply nfa->dfa
+3. Check if the DFA accepts the same language as the NFA. Compare the DFA's transitions, states, start state, and accept states with the expected DFA.
+4. Test Edge Cases:
+	NFAs with no transitions.
+	NFAs where all states are accepting.
+	NFAs with unreachable states.
+
+?????????????????????????????????????????????????????????????????????????????????????????????????????????????
+
+;; TEST            TEST                  TEST
+
+;;; Test code for nfa->dfa function
+(defun test-nfa->dfa ()
+  (format t "Testing nfa->dfa function...~%")
+  
+  ;; Define a sample NFA
+  (let* ((nfa (make-fa
+               '(
+                 ;; NFA that accepts strings ending in "ab"
+                 (q0 'a q0)
+                 (q0 'a q1)
+                 (q1 'b q2)
+                 (q2 :epsilon q3) ; epsilon transition to the accept state
+                 )
+               'q0
+               '(q3)))
+         ;; Convert the NFA to a DFA
+         (dfa (nfa->dfa nfa)))
+
+    (fa-dot nfa "nfa.dot")
+    (fa-dot dfa "dfa.dot")
+    ;; Display the DFA structure for manual inspection
+    (format t "DFA States: ~A~%" (finite-automaton-states dfa))
+    (format t "DFA Start State: ~A~%" (finite-automaton-start dfa))
+    (format t "DFA Accept States: ~A~%" (finite-automaton-accept dfa))
+    (format t "DFA Transitions:~%")
+    (map-fa-edges
+     (lambda (state-0 input-symbol state-1)
+       (format t "  ~A --'~A'--> ~A~%" state-0 input-symbol state-1))
+     dfa)
+    
+    ;; Define test strings and expected results
+    (let ((test-strings
+           '((:string ("a" "a" "b") :expected t)
+             (:string ("a" "b") :expected t)
+             (:string ("a" "a" "a") :expected nil)
+             (:string ("b" "a" "b") :expected t)
+             (:string ("b" "a") :expected nil)
+             (:string ("a" "b" "a" "b") :expected t)
+             )))
+      ;; Run tests on the DFA
+      (dolist (test test-strings)
+        (let* ((string (getf test :string))
+               (expected (getf test :expected))
+               (result (dfa-simulate dfa string)))
+          (format t "Testing string ~A: ~A~%" string result)
+          ;; Check correctness and print error if mismatched
+          (unless (equal result expected)
+            (format t "Test failed for input ~A. Expected: ~A, Got: ~A~%"
+                    string expected result))))))
+  (format t "nfa->dfa tests completed successfully.~%~%"))
+
+
+
+
+;;; Test code for fa-union
+
+
+(defun test-fa-union ()
+  (format t "Testing fa-union function...~%")
+
+  ;; Define two sample NFAs
+  ;; NFA 1 accepts strings containing "a"
+  (let* ((nfa1 (make-fa
+                '((q0 'a q1))
+                'q0
+                '(q1)))
+         ;; NFA 2 accepts strings containing "b"
+         (nfa2 (make-fa
+                '((p0 'b p1))
+                'p0
+                '(p1)))
+         ;; Create union NFA that accepts strings with either "a" or "b"
+         (union-nfa (fa-union nfa1 nfa2)))
+
+    ;; Display the union NFA structure for manual inspection
+    (format t "Union NFA States: ~A~%" (finite-automaton-states union-nfa))
+    (format t "Union NFA Start State: ~A~%" (finite-automaton-start union-nfa))
+    (format t "Union NFA Accept States: ~A~%" (finite-automaton-accept union-nfa))
+    (format t "Union NFA Transitions:~%")
+    (map-fa-edges
+     (lambda (state-0 input-symbol state-1)
+       (format t "  ~A --'~A'--> ~A~%" state-0 input-symbol state-1))
+     union-nfa)
+    
+    ;; Define test strings and expected results
+    (let ((test-strings
+           '((:string ("a") :expected t)
+             (:string ("b") :expected t)
+             (:string ("a" "b") :expected t)
+             (:string ("c") :expected nil)
+             (:string ("a" "c") :expected t)
+             (:string ("b" "c") :expected t)
+             )))
+      ;; Run tests on the Union NFA
+      (dolist (test test-strings)
+        (let* ((string (getf test :string))
+               (expected (getf test :expected))
+               (result (nfa-simulate union-nfa string)))
+          (format t "Testing string ~A on Union NFA: ~A~%" string result)
+          ;; Check correctness and print error if mismatched
+          (unless (equal result expected)
+            (format t "Test failed for input ~A on Union NFA. Expected: ~A, Got: ~A~%"
+                    string expected result))))))
+  (format t "fa-union tests completed successfully.~%~%"))
+
+
+
+
+
+;; Test code for DFA-minimize
+
+
+(defun test-dfa-minimize ()
+  (format t "Testing dfa-minimize function...~%")
+
+  ;; Define a sample DFA with redundant states
+  (let* ((dfa (make-fa
+               '(
+                 ;; DFA that accepts strings ending in "ab"
+                 (A 'a B)
+                 (B 'a B)
+                 (B 'b C)
+                 (C 'a B)
+                 (C 'b C)
+                 )
+               'A
+               '(C)))
+         ;; Minimize the DFA
+         (minimized-dfa (dfa-minimize dfa)))
+
+    ;; Display the minimized DFA structure
+    (format t "Minimized DFA States: ~A~%" (finite-automaton-states minimized-dfa))
+    (format t "Minimized DFA Start State: ~A~%" (finite-automaton-start minimized-dfa))
+    (format t "Minimized DFA Accept States: ~A~%" (finite-automaton-accept minimized-dfa))
+    (format t "Minimized DFA Transitions:~%")
+    (map-fa-edges
+     (lambda (state-0 input-symbol state-1)
+       (format t "  ~A --'~A'--> ~A~%" state-0 input-symbol state-1))
+     minimized-dfa)
+    
+    ;; Define test strings and expected results for both original and minimized DFAs
+    (let ((test-strings
+           '((:string ("a" "a" "b") :expected t)
+             (:string ("a" "b") :expected t)
+             (:string ("a" "a" "a") :expected nil)
+             (:string ("b" "a" "b") :expected t)
+             (:string ("b" "a") :expected nil)
+             (:string ("a" "b" "a" "b") :expected t)
+             )))
+      ;; Run tests on the minimized DFA
+      (dolist (test test-strings)
+        (let* ((string (getf test :string))
+               (expected (getf test :expected))
+               (result (dfa-simulate minimized-dfa string)))
+          (format t "Testing string ~A on Minimized DFA: ~A~%" string result)
+          ;; Check correctness and print error if mismatched
+          (unless (equal result expected)
+            (format t "Test failed for input ~A on Minimized DFA. Expected: ~A, Got: ~A~%"
+                    string expected result))))))
+  (format t "dfa-minimize tests completed successfully.~%~%"))
